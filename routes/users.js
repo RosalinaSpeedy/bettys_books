@@ -2,14 +2,80 @@
 const express = require("express")
 const router = express.Router()
 
-router.get('/register', function (req, res, next) {
-    res.render('register.ejs')                                                               
-})    
+const bcrypt = require('bcrypt')
 
-router.post('/registered', function (req, res, next) {
-    // saving data in database
-    res.send(' Hello '+ req.body.first + ' '+ req.body.last +' you are now registered!  We will send an email to you at ' + req.body.email)                                                                           
+router.get('/register', function (req, res, next) {
+    res.render('register.ejs')
 })
 
+router.post('/registered', function (req, res, next) {
+    const saltRounds = 10
+    const plainPassword = req.body.password
+
+    bcrypt.hash(plainPassword, saltRounds, function (err, hashedPassword) {
+        // store hashed password
+        console.log("adding user");
+        // saving data in database
+        let sqlquery = "INSERT INTO users (username, firstName, lastName, email, hashedPassword) VALUES (?,?,?,?,?)"
+        // execute sql query
+        let newrecord = [req.body.username, req.body.first, req.body.last, req.body.email, hashedPassword]
+        db.query(sqlquery, newrecord, (err, result) => {
+            if (err) {
+                next(err)
+            }
+            else {
+                var result = 'Hello ' + req.body.first + ' ' + req.body.last + ' you are now registered!  We will send an email to you at ' + req.body.email
+                result += 'Your password is: ' + req.body.password + ' and your hashed password is: ' + hashedPassword
+                res.send(result)
+            }
+        })
+    })
+    // saving data in database
+    //res.send(' Hello ' + req.body.first + ' ' + req.body.last + ' you are now registered!  We will send an email to you at ' + req.body.email)
+})
+
+router.get('/list', function (req, res, next) {
+    let sqlquery = "SELECT username, firstName, LastName, email FROM users" // query database to get all the users
+    // execute sql query
+    db.query(sqlquery, (err, result) => {
+        if (err) {
+            next(err)
+        }
+        res.render("listusers.ejs", { users: result })
+    })
+})
+
+router.get('/login', function (req, res, next) {
+    res.render('login.ejs')
+})
+
+router.post('/loggedin', function (req, res, next) {
+    // Compare the password supplied with the password in the database
+    let sqlquery = "SELECT hashedPassword FROM users WHERE username=\"" + req.body.username + "\"" // query database to get password
+    // execute sql query
+    db.query(sqlquery, (err, result) => {
+        if (err) {
+            next(err)
+        }
+        if (result.length > 0) {
+            var hashedPassword = result[0].hashedPassword;
+        } else {
+            res.send("User account not found!");
+        }
+        console.log(hashedPassword);
+        bcrypt.compare(req.body.password, hashedPassword, function (err, result) {
+            if (err) {
+                next(err)
+            }
+            else if (result == true) {
+                res.send("Successfuly logged in!");
+            }
+            else {
+                res.send("Login failed!");
+            }
+        })
+        //res.render("listusers.ejs", { users: result })
+    })
+})
 // Export the router object so index.js can access it
 module.exports = router

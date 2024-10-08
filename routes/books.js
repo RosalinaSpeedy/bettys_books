@@ -34,6 +34,7 @@ router.get('/addbook', function (req, res, next) {
 })
 
 router.post('/bookadded', function (req, res, next) {
+    console.log("adding book");
     // saving data in database
     let sqlquery = "INSERT INTO books (name, price) VALUES (?,?)"
     // execute sql query
@@ -42,8 +43,9 @@ router.post('/bookadded', function (req, res, next) {
         if (err) {
             next(err)
         }
-        else
+        else {
             res.send(' This book is added to database, name: '+ req.body.name + ' price '+ req.body.price)
+        }
     })
 }) 
 
