@@ -4,6 +4,14 @@ const router = express.Router()
 
 const bcrypt = require('bcrypt')
 
+const redirectLogin = (req, res, next) => {
+    if (!req.session.userId) {
+        res.redirect('./login') // redirect to the login page
+    } else {
+        next(); // move to the next middleware function
+    }
+}
+
 router.get('/register', function (req, res, next) {
     res.render('register.ejs')
 })
@@ -68,7 +76,9 @@ router.post('/loggedin', function (req, res, next) {
                 next(err)
             }
             else if (result == true) {
-                res.send("Successfuly logged in!");
+                // Save user session here, when login is successful
+                req.session.userId = req.body.username;
+                res.redirect('../')
             }
             else {
                 res.send("Login failed!");
@@ -77,5 +87,15 @@ router.post('/loggedin', function (req, res, next) {
         //res.render("listusers.ejs", { users: result })
     })
 })
+
+router.get('/logout', redirectLogin, (req,res) => {
+    req.session.destroy(err => {
+    if (err) {
+      return res.redirect('../')
+    }
+    res.send('you are now logged out. <a href='+'../'+'>Home</a>');
+    })
+})
+
 // Export the router object so index.js can access it
 module.exports = router
